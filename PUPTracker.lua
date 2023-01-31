@@ -1,6 +1,6 @@
 _addon.name = 'Puppet Tracker'
 _addon.author = 'Pseudowitchy'
-_addon.version = 0.3
+_addon.version = 0.5
 _addon.command = 'pup'
 
 require('luau')
@@ -9,6 +9,21 @@ res  = require('resources')
 texts = require('texts')
 local config = require('config')
 local functions = require('functions')
+
+time_start = os.time()
+main_job = 0
+sub_job = 0
+pet_skills = nil
+puppet_skills = nil
+pet_name = nil
+pet_exists = false
+pet = nil
+
+timercountdown = 0
+
+towns = S{50,235,234,224,284,233,70,257,251,14,242,250,226,245,
+237,249,131,53,252,231,236,246,232,240,247,243,223,248,230,
+26,71,244,239,238,241,256,257}
 
 -- Attachment Durations:
 Flashbulb = 45
@@ -61,14 +76,11 @@ BarrageTurbine_Display = 0
 BarrageTurbine_Count = 0
 BarrageTurbine_Equipped = 0
 
-time_start = os.time()
-pet_skills = ''
-puppet_skills = ''
 
 local defaults = {
     automatonname = Mademoiselle,
-    
-    font = Impact,
+
+    font = Arial,
     fontsize = 30,   
     
     pos = {
@@ -94,16 +106,82 @@ config.save(settings)
 
 count_start = 0
 
+
 label = [[ \cs(255, 115, 0) ==== Cooldowns ==== \cr
 \cs(125, 125, 125)${puppet_skills|   - No Trackable Skills}]]
 
 windower.register_event('login', function()
     windower.add_to_chat(8,'----- Puppet Tracker Loaded -----')
+    GetPlayerInfo()
 end)
 
 windower.register_event('load', function()
     windower.add_to_chat(8,'----- Puppet Tracker Loaded -----')
+    GetPlayerInfo()
 end)
+
+windower.register_event('zone change', function(new_id)
+    ResetEquipped()
+    if towns:contains(new_id) then
+        window:hide()
+    else
+        window:show()
+        GetPlayerInfo()
+    end
+end)
+
+windower.register_event('job change', function(main_job_id, sub_job_id)
+    if main_job_id == 18 or sub_job_id == 18 then
+        window:show()
+    else
+        window:hide()
+    end
+end)
+
+windower.register_event('action', function(act) -- 648=Activate -- Don't hate me I haven't figured this out yet <3 -- 136 or 310 for activate/deus ex?
+    if main_job == 18 or sub_job == 18 then
+        local abil_ID = act['param']
+        local actor_id = act['actor_id']
+        local player = T(windower.ffxi.get_player())
+        local pet_index = windower.ffxi.get_mob_by_id(windower.ffxi.get_player()['id'])['pet_index']
+
+        if act['category'] == 6 and actor_id == player.id then
+            if S{136, 310}:contains(abil_ID) then
+                ResetEquipped()
+                GetPlayerInfo()
+            elseif S{139}:contains(abil_ID) then
+                ResetEquipped()
+            else
+                return
+            end
+        end
+    end
+end)
+
+function GetPlayerInfo()
+    local player = windower.ffxi.get_player()
+    main_job = player.main_job_id
+    sub_job = player.sub_job_id   
+    
+    while(player.pet_index == nil) do
+        coroutine.sleep(1)
+        local pet = windower.ffxi.get_mob_by_target('pet')
+        if pet['name'] == settings.automatonname then
+            return
+        else
+            if pet == nil then
+                pet_name = 'None Exists'
+                attatchments = 'None'
+            else
+                pet_name = pet['name']
+                attachments = res.items:category('Automaton')
+                windower.add_to_chat(8, '----- Automaton Name Updated -----')
+                settings.automatonname = pet_name
+                config.save(settings, 'all')
+            end
+        end
+    end
+end
 
 function windowSetup()
     
@@ -142,89 +220,71 @@ function windowSetup()
     default_settings.text.stroke.green = 0
     default_settings.text.stroke.blue = 0
     
-    if not (window == nil) then --This should clear and then redefine what is in the hud
+    if not (window == nil) then
         texts.destroy(window)
     end
     window = texts.new('', default_settings)
     
     texts.append(window, label, default_settings)
         
-    window:show() --Displays the hud hopefully.
+    window:show()
 end
 
 windowSetup()
 
-function check_flashbulb()
-    if Flashbulb_Display > 0 then
-        Flashbulb_Display = Flashbulb - (os.time() - Flashbulb_Count)
-    end
+function ResetEquipped()
+    Flashbulb_Equipped = 0
+    Eraser_Equipped = 0
+    Strobe_Equipped = 0
+    HeatCapacitor_Equipped = 0
+    ShockAbsorber_Equipped = 0
+    Disruptor_Equipped = 0
+    Regulator_Equipped = 0
+    Economizer_Equipped = 0
+    ManaConverter_Equipped = 0
+    BarrageTurbine_Equipped = 0
 end
 
-function check_eraser()
-    if Eraser_Display > 0 then
+function check_skills()
+    local skill = skills
+    if Flashbulb_Equipped == 1 and Flashbulb_Display > 0 then
+        Flashbulb_Display = Flashbulb - (os.time() - Flashbulb_Count)    
+    end
+    if Eraser_Equipped == 1 and Eraser_Display > 0 then
         Erase_Display = Eraser - (os.time() - Eraser_Count)
     end
-end
-
-function check_strobe()
-    if Strobe_Display > 0 then
+    if Strobe_Equipped == 1 and Strobe_Display > 0 then
         Strobe_Display = Strobe - (os.time() - Strobe_Count)
     end
-end
-
-function check_heatcapacitor()
-    if HeatCapacitor_Display > 0 then
+    if HeatCapacitor_Equipped == 1 and HeatCapacitor_Display > 0 then
         HeatCapacitor_Display = HeatCapacitor - (os.time() - HeatCapacitor_Count)
     end
-end
-
-function check_shockabsorber()
-    if ShockAbsorber_Display > 0 then
+    if ShockAbsorber_Equipped == 1 and ShockAbsorber_Display > 0 then
         ShockAbsorber_Display = ShockAbsorber - (os.time() - ShockAbsorber_Count)
     end
-end
-
-function check_disruptor()
-    if Disruptor_Display > 0 then
+    if Disruptor_Equipped == 1 and Disruptor_Display > 0 then
         Disruptor_Display = Disruptor - (os.time() - Disruptor_Count)
     end
-end
-
-function check_regulator()
-    if Regulator_Display > 0 then
+    if Regulator_Equipped == 1 and Regulator_Display > 0 then
         Regulator_Display = Regulator - (os.time() - Regulator_Count)
     end
-end
-
-function check_economizer()
-    if Economizer_Display > 0 then
+    if Economizer_Equipped == 1 and Economizer_Display > 0 then
         Economizer_Display = Economizer - (os.time() - Economizer_Count)
     end
-end
-
-function check_manaconverter()
-    if ManaConverter_Display > 0 then
+    if ManaConverter_Equipped == 1 and ManaConverter_Display > 0 then
         ManaConverter_Display = ManaConverter - (os.time() - ManaConverter_Count)
     end
-end
-
-function check_barrageturbine()
-    if BarrageTurbine_Display > 0 then
+    if BarrageTurbine_Equipped == 1 and BarrageTurbine_Display > 0 then
         BarrageTurbine_Display = BarrageTurbine - (os.time() - BarrageTurbine_Count)
     end
 end
 
 function updatePetSkills()
-    -- if not pet.isvalid then
-    --     return 
-    -- end
-
     local pet_skills = ''
     
     texts.append(window, pet_skills)
 
-    if Strobe_Equipped == 0 and HeatCapacitor_Equipped == 0 and Flashbulb_Equipped == 0 and Eraser_Equipped == 0 and ShockAbsorber_Equipped == 0 and
-Disruptor_Equipped == 0 and Regulator_Equipped == 0 and Economizer_Equipped == 0 and ManaConverter_Equipped == 0 and BarrageTurbine_Equipped == 0 then
+    if Strobe_Equipped == 0 and HeatCapacitor_Equipped == 0 and Flashbulb_Equipped == 0 and Eraser_Equipped == 0 and ShockAbsorber_Equipped == 0 and Disruptor_Equipped == 0 and Regulator_Equipped == 0 and Economizer_Equipped == 0 and ManaConverter_Equipped == 0 and BarrageTurbine_Equipped == 0 then
         pet_skills = "   - No Trackable Skills"
     else
         if Strobe_Equipped == 1 then
@@ -311,16 +371,7 @@ windower.register_event(
         if os.time() > time_start then
             time_start = os.time()
             
-            check_flashbulb()
-            check_strobe()
-            check_heatcapacitor()
-            check_shockabsorber()
-            check_disruptor()
-            check_regulator()
-            check_economizer()
-            check_manaconverter()
-            check_barrageturbine()
-            
+            check_skills()
             updatePetSkills()            
         end
     end
@@ -329,8 +380,7 @@ windower.register_event(
 windower.register_event(
     "incoming text",
     function(original, modified, mode)
-        
-        if original:contains(settings.automatonname) then
+        if original:contains(pet_name or settings.automatonname) then
             if original:contains("Erase") then
                 Eraser_Count = os.time()
                 Eraser_Display = Eraser

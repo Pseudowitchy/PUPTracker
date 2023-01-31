@@ -1,0 +1,42 @@
+<?xml version="1.1" ?>
+<settings>
+    <global>
+        <automatonname>Tsukushi</automatonname>
+        <bg>
+            <alpha>115</alpha>
+            <blue>0</blue>
+            <green>0</green>
+            <red>0</red>
+        </bg>
+        <bottom>false</bottom>
+        <draggable>false</draggable>
+        <flags>
+            <bold>true</bold>
+            <bottom>false</bottom>
+            <draggable>false</draggable>
+            <italics>false</italics>
+            <right>false</right>
+        </flags>
+        <font>Arial</font>
+        <fontcolor>
+            <alpha>255</alpha>
+            <blue>147</blue>
+            <green>161</green>
+            <red>161</red>
+        </fontcolor>
+        <fontsize>11</fontsize>
+        <pos>
+            <x>1740</x>
+            <y>298</y>
+        </pos>
+        <rightsided>false</rightsided>
+        <toggles>
+            <bold>true</bold>
+            <bottom>false</bottom>
+            <draggable>false</draggable>
+            <italics>false</italics>
+            <right>false</right>
+            <rightsided>false</rightsided>
+        </toggles>
+    </global>
+</settings>
