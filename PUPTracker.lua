@@ -143,14 +143,15 @@ windower.register_event('action', function(act) -- 648=Activate -- Don't hate me
         local abil_ID = act['param']
         local actor_id = act['actor_id']
         local player = T(windower.ffxi.get_player())
-        local pet_index = windower.ffxi.get_mob_by_id(windower.ffxi.get_player()['id'])['pet_index']
 
         if act['category'] == 6 and actor_id == player.id then
-            if S{136, 310}:contains(abil_ID) then
+            if S{136, 310}:contains(abil_ID) then -- Activate & Deus Ex Machina
                 ResetEquipped()
                 GetPlayerInfo()
-            elseif S{139}:contains(abil_ID) then
+            elseif S{139}:contains(abil_ID) then -- Deactiavte
                 ResetEquipped()
+            elseif S{138, 140, 141, 142, 143, 144, 145, 146, 147, 148}:contains(abil_ID) then -- Maneuvers & Deploy
+                GetpetInfo()
             else
                 return
             end
@@ -162,24 +163,18 @@ function GetPlayerInfo()
     local player = windower.ffxi.get_player()
     main_job = player.main_job_id
     sub_job = player.sub_job_id   
-    
-    while(player.pet_index == nil) do
-        coroutine.sleep(1)
-        local pet = windower.ffxi.get_mob_by_target('pet')
-        if pet['name'] == settings.automatonname then
-            return
-        else
-            if pet == nil then
-                pet_name = 'None Exists'
-                attatchments = 'None'
-            else
-                pet_name = pet['name']
-                attachments = res.items:category('Automaton')
-                windower.add_to_chat(8, '----- Automaton Name Updated -----')
-                settings.automatonname = pet_name
-                config.save(settings, 'all')
-            end
-        end
+end
+
+function GetpetInfo()
+    local pet = windower.ffxi.get_mob_by_target('pet')
+    if pet['name'] == settings.automatonname then
+        return
+    else
+        pet_name = pet['name']
+        attachments = res.items:category('Automaton')
+        windower.add_to_chat(8, '----- Automaton Name Updated to: '..pet_name..' -----')
+        settings.automatonname = pet_name
+        config.save(settings, 'all')
     end
 end
 
